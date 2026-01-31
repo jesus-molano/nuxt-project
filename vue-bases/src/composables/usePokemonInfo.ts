@@ -1,25 +1,33 @@
-import {ref} from "vue";
+import {computed, toValue, type MaybeRefOrGetter} from "vue";
+import {useFetch} from "./useFetch.ts";
+import type PokeapiResponseApi from "../interfaces/pokeapi-response-api.ts"
 
-interface PokemonInfo {
+interface Pokemon {
     id: number,
     name: string,
     image: string
 }
-export const usePokemonInfo = async () => {
-    const actualPokemonId = ref(1)
 
-    const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${actualPokemonId.value}`)
-    const data = await response.json()
+export const usePokemonInfo = (pokemonId: MaybeRefOrGetter<number>) => {
 
-    const pokemonInfo = ref<PokemonInfo | null>(null)
-    pokemonInfo.value = {
-        id: data.id,
-        name: data.name,
-        image: data.sprites.front_default
-    }
+    const {data, hasError, isLoading, error} = useFetch<PokeapiResponseApi>(() => 
+        `https://pokeapi.co/api/v2/pokemon/${toValue(pokemonId)}`
+    )
 
+    const pokemon = computed<Pokemon | null>(() => {
+        if (!data.value) return null
+
+        return {
+            id: data.value.id ?? 0,
+            name: data.value.name ?? 'Unknown',
+            image: data.value.sprites?.other?.dream_world?.front_default ?? ''
+        }
+    })
 
     return {
-        pokemonInfo
+        pokemon,
+        hasError,
+        isLoading,
+        error
     }
 }
